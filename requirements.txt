@@ -1,0 +1,17 @@
+# --- Backend y Servidor API ---
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+pydantic==2.10.6
+
+# --- Ciencia de Datos y Machine Learning ---
+numpy==2.2.6
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.4.2
+
+# --- Pruebas y Calidad de Código ---
+pytest==8.3.4
+requests==2.32.3
+
+#otros
+httpx==0.28.1
