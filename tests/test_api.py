@@ -32,6 +32,9 @@ def test_predict_endpoint_valid_data():
     assert data["patient_id"] == "TCGA-02-0001"
     assert "analysis_result" in data
     assert "clinical_interpretation" in data["analysis_result"]
+    # Validar explicabilidad SHAP en predicción individual
+    assert "feature_contributions" in data["analysis_result"]
+    assert isinstance(data["analysis_result"]["feature_contributions"], dict)
 
 
 def test_predict_endpoint_invalid_stage():
@@ -70,3 +73,6 @@ def test_predict_batch_endpoint():
     assert len(data["predictions"]) == 2
     assert data["predictions"][0]["patient_id"] == "PATIENT-001"
     assert data["predictions"][1]["patient_id"] == "PATIENT-002"
+    # Validar que los resultados del batch también incluyan las contribuciones de SHAP
+    assert "feature_contributions" in data["predictions"][0]
+    assert isinstance(data["predictions"][0]["feature_contributions"], dict)

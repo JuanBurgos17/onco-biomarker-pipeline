@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class PatientClinicalInput(BaseModel):
@@ -30,6 +30,10 @@ class PredictionResponse(BaseModel):
     predicted_risk_class: str
     confidence_score: float
     interpretation: str
+    feature_contributions: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Impacto local de cada biomarcador/gen calculado mediante valores SHAP"
+    )
 
 
 # Esquema para la respuesta por lotes

@@ -7,7 +7,7 @@ from src.core.logger import logger
 
 app = FastAPI(
     title="OncoBiomarker Precision API",
-    description="Pipeline clínico de análisis genómico y predicción de biomarcadores oncológicos.",
+    description="Pipeline clínico de análisis genómico y predicción de biomarcadores oncológicos con XAI.",
     version="1.0.0"
 )
 
@@ -57,8 +57,7 @@ def predict_patient_risk(data: PatientClinicalInput):
 @app.post("/api/v1/predict/batch/", response_model=BatchPredictionResponse, tags=["Batch Inference"])
 def predict_batch(payload: BatchPredictionRequest):
     """
-    Endpoint para procesar una cohorte completa de pacientes en lote (Batch Inference).
-    Recibe una lista de perfiles clínicos y genómicos, y devuelve las predicciones de riesgo.
+    Endpoint para procesar una cohorte completa de pacientes en lote con explicabilidad SHAP.
     """
     logger.info(f"Recibida solicitud de inferencia por lotes para {len(payload.patients)} pacientes.")
     
@@ -68,22 +67,21 @@ def predict_batch(payload: BatchPredictionRequest):
         # Reutilizamos el objeto 'predictor' ya inicializado
         result = predictor.predict(patient.gene_expression_profile)
         
-        prediction_class = result.get("risk_class", "Unknown")
+        # Corregido a "prediction_class" para coincidir con el predictor
+        prediction_class = result.get("prediction_class", 0)
         confidence = result.get("confidence_score", 0.0)
+        interpretation = result.get("clinical_interpretation", "Sin evaluar")
         
-        interpretation = result.get(
-            "clinical_interpretation", 
-            "Alto riesgo oncológico detectado. Se sugiere revisión clínica prioritaria." 
-            if prediction_class == 1 
-            else "Bajo riesgo o perfil estable. Continuar seguimiento rutinario."
-        )
+        # Extraer las contribuciones SHAP del resultado del predictor
+        feature_contributions = result.get("feature_contributions", {})
         
         predictions_list.append(
             PredictionResponse(
                 patient_id=patient.patient_id,
                 predicted_risk_class=str(prediction_class),
                 confidence_score=round(float(confidence), 4),
-                interpretation=interpretation
+                interpretation=interpretation,
+                feature_contributions=feature_contributions
             )
         )
         
