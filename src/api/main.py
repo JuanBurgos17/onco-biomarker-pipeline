@@ -1,8 +1,9 @@
 import time
 from fastapi import FastAPI, HTTPException, Request
-from src.api.schemas import PatientClinicalInput
+from src.api.schemas import PatientClinicalInput, BatchPredictionRequest, PredictionResponse, BatchPredictionResponse
 from src.models.predictor import OncoPredictor
 from src.core.logger import logger
+
 
 app = FastAPI(
     title="OncoBiomarker Precision API",
@@ -52,3 +53,43 @@ def predict_patient_risk(data: PatientClinicalInput):
     except Exception as e:
         logger.error(f"Error procesando paciente {data.patient_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/predict/batch/", response_model=BatchPredictionResponse, tags=["Batch Inference"])
+def predict_batch(payload: BatchPredictionRequest):
+    """
+    Endpoint para procesar una cohorte completa de pacientes en lote (Batch Inference).
+    Recibe una lista de perfiles clínicos y genómicos, y devuelve las predicciones de riesgo.
+    """
+    logger.info(f"Recibida solicitud de inferencia por lotes para {len(payload.patients)} pacientes.")
+    
+    predictions_list = []
+    
+    for patient in payload.patients:
+        # Reutilizamos el objeto 'predictor' ya inicializado
+        result = predictor.predict(patient.gene_expression_profile)
+        
+        prediction_class = result.get("risk_class", "Unknown")
+        confidence = result.get("confidence_score", 0.0)
+        
+        interpretation = result.get(
+            "clinical_interpretation", 
+            "Alto riesgo oncológico detectado. Se sugiere revisión clínica prioritaria." 
+            if prediction_class == 1 
+            else "Bajo riesgo o perfil estable. Continuar seguimiento rutinario."
+        )
+        
+        predictions_list.append(
+            PredictionResponse(
+                patient_id=patient.patient_id,
+                predicted_risk_class=str(prediction_class),
+                confidence_score=round(float(confidence), 4),
+                interpretation=interpretation
+            )
+        )
+        
+    logger.info(f"Procesamiento por lotes completado exitosamente para {len(predictions_list)} registros.")
+    
+    return BatchPredictionResponse(
+        total_processed=len(predictions_list),
+        predictions=predictions_list
+    )

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, List
 
+
 class PatientClinicalInput(BaseModel):
     patient_id: str = Field(..., description="Identificador único del paciente (ej. TCGA-02-0001)")
     age: int = Field(..., ge=0, le=120, description="Edad del paciente en años")
@@ -17,3 +18,21 @@ class PatientClinicalInput(BaseModel):
         if value.lower() not in valid_stages:
             raise ValueError(f"Estadio tumoral inválido. Debe ser uno de: {valid_stages}")
         return value
+
+
+# Esquema para peticiones por lotes utilizando la validación robusta
+class BatchPredictionRequest(BaseModel):
+    patients: List[PatientClinicalInput] = Field(..., description="Lista de pacientes para predicción en lote")
+
+
+class PredictionResponse(BaseModel):
+    patient_id: str
+    predicted_risk_class: str
+    confidence_score: float
+    interpretation: str
+
+
+# Esquema para la respuesta por lotes
+class BatchPredictionResponse(BaseModel):
+    total_processed: int
+    predictions: List[PredictionResponse]
